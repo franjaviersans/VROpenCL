@@ -19,6 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <Text Include="kernel.cl">
+      <FileType>CppCode</FileType>
+    </Text>
     <ClCompile Include="src\CubeIntersection.cpp" />
     <ClCompile Include="src\FBOCube.cpp" />
     <ClCompile Include="src\FBOQuad.cpp" />
@@ -45,7 +48,7 @@
     <ClCompile Include="src\helper_math.h">
       <FileType>Document</FileType>
     </ClCompile>
-    <CudaCompile Include="src\kernel.cu" />
+    <CudaCompile Include="src\kernel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\hit.frag" />
@@ -158,7 +161,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>OpenCL.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"

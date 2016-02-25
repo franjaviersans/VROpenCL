@@ -8,6 +8,7 @@
 #include "FBOQuad.h"
 #include "Volume.h"
 #include "FinalImage.h"
+#include "kernel.cpp"
 #include <iostream>
 
 using std::cout;
@@ -30,7 +31,7 @@ namespace glfwFunc
 	TransferFunction *g_pTransferFunc;
 
 	//Class to wrap cuda code
-	CUDAClass * cuda;
+	//CUDAClass * cuda;
 
 	float color[]={1,1,1};
 	bool pintar = false;
@@ -179,7 +180,7 @@ namespace glfwFunc
 		g_pTransferFunc->Resize(&WINDOW_WIDTH, &WINDOW_HEIGHT);
 		
 		//Set image Size
-		cuda->cudaSetImageSize(iWidth, iHeight, NCP, fAngle/2.0f);
+		//cuda->cudaSetImageSize(iWidth, iHeight, NCP, fAngle/2.0f);
 		
 	}
 
@@ -201,7 +202,7 @@ namespace glfwFunc
 
 		mMVP = mProjMatrix * mModelViewMatrix;
 
-		cuda->cudaUpdateMatrix(glm::value_ptr(glm::transpose(glm::inverse(mModelViewMatrix))));
+		//cuda->cudaUpdateMatrix(glm::value_ptr(glm::transpose(glm::inverse(mModelViewMatrix))));
 
 		/*//Obtain Back hits
 		m_BackInter->Draw(mMVP);
@@ -210,7 +211,7 @@ namespace glfwFunc
 
 
 		//CUDA volume ray casting
-		cuda->cudaRC();
+		//cuda->cudaRC();
 
 
 		
@@ -223,7 +224,7 @@ namespace glfwFunc
 		//Blend with bg
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-		cuda->Use(GL_TEXTURE0); //Use the texture
+		//cuda->Use(GL_TEXTURE0); //Use the texture
 		m_FinalImage->Draw();
 		glDisable(GL_BLEND);
 
@@ -286,14 +287,14 @@ namespace glfwFunc
 		printf("Vendor: %s\n", glGetString(GL_VENDOR));
 		printf("Renderer: %s\n", glGetString(GL_RENDERER));
 
-		cuda = new CUDAClass();
+		//cuda = new CUDAClass();
 
 
 		//Init the transfer function
 		g_pTransferFunc = new TransferFunction();
 		g_pTransferFunc->InitContext(glfwWindow, &WINDOW_WIDTH, &WINDOW_HEIGHT, -1, -1);
 
-		cuda->cudaSetTransferFunction((float4 *)g_pTransferFunc->colorPalette, 256);
+		//cuda->cudaSetTransferFunction((float4 *)g_pTransferFunc->colorPalette, 256);
 
 		TwInit(TW_OPENGL_CORE, NULL);
 		TwWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -323,7 +324,7 @@ namespace glfwFunc
 		volume = new Volume();
 		volume->Load("Raw/foot_8_256_256_256.raw", 256, 256, 256);
 
-		cuda->cudaSetVolume((char1 *)volume->volume, 256, 256, 256, volume->m_fDiagonal);
+		//cuda->cudaSetVolume((char1 *)volume->volume, 256, 256, 256, volume->m_fDiagonal);
 
 		
 
@@ -351,6 +352,7 @@ namespace glfwFunc
 int main(int argc, char** argv)
 {
 
+	kernel();
 
 	glfwSetErrorCallback(glfwFunc::errorCB);
 	if (!glfwInit())	exit(EXIT_FAILURE);
@@ -376,7 +378,7 @@ int main(int argc, char** argv)
 		{
 			//glfwFunc::g_pTransferFunc->UpdatePallete();
 			glfwFunc::g_pTransferFunc->updateTexture = false;
-			glfwFunc::cuda->cudaSetTransferFunction((float4 *)glfwFunc::g_pTransferFunc->colorPalette, 256);
+			//glfwFunc::cuda->cudaSetTransferFunction((float4 *)glfwFunc::g_pTransferFunc->colorPalette, 256);
 		}
 		glfwFunc::draw();
 		glfwPollEvents();	//or glfwWaitEvents()
