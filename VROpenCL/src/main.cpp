@@ -1,4 +1,3 @@
-#include "kernel.cuh"
 #include "Definitions.h"
 #include "GLSLProgram.h"
 #include "TransferFunction.h"
@@ -8,7 +7,7 @@
 #include "FBOQuad.h"
 #include "Volume.h"
 #include "FinalImage.h"
-#include "kernel.cpp"
+#include "kernel.h"
 #include <iostream>
 
 using std::cout;
@@ -351,8 +350,9 @@ namespace glfwFunc
 
 int main(int argc, char** argv)
 {
+	something::kernel();
 
-	kernel();
+	exit(0);
 
 	glfwSetErrorCallback(glfwFunc::errorCB);
 	if (!glfwInit())	exit(EXIT_FAILURE);
@@ -362,6 +362,8 @@ int main(int argc, char** argv)
 		glfwTerminate();
 		exit(EXIT_FAILURE);
 	}
+
+
 
 
 	

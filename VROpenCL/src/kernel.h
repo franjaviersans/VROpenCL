@@ -1,4 +1,31 @@
-#ifndef KERNELGPU_H
+
+
+#ifndef OPENCL_H
+#define OPENCL_H
+
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#ifdef __APPLE__
+#include <OpenCL/opencl.h>
+#else
+#include <CL/cl.h>
+#endif
+
+#define MEM_SIZE (128)
+#define MAX_SOURCE_SIZE (0x100000)
+
+
+class something{
+public:
+	static int kernel();
+};
+
+
+#endif
+
+/*#ifndef KERNELGPU_H
 #define KERNELGPU_H
 
 
@@ -55,7 +82,7 @@ public:
 
 	void destroyObject();
 	void cudaUpdateMatrix(const float * matrix);
-	void cudaRC(/*, unsigned int, unsigned int, float, float4 *, float4 **/);
+	void cudaRC(/*, unsigned int, unsigned int, float, float4 *, float4 *);
 	void cudaSetVolume(char1 *vol, unsigned int width, unsigned int height, unsigned int depth, float diagonal);
 	void cudaSetImageSize(unsigned int width, unsigned int height, float NCP, float angle);
 	void cudaSetTransferFunction(float4 *d_transferFunction, unsigned int width = 256);
@@ -66,4 +93,4 @@ private:
 
 };
 
-#endif
+#endif*/
