@@ -30,7 +30,7 @@ namespace glfwFunc
 	TransferFunction *g_pTransferFunc;
 
 	//Class to wrap cuda code
-	//CUDAClass * cuda;
+	OpenCLClass * opencl;
 
 	float color[]={1,1,1};
 	bool pintar = false;
@@ -179,7 +179,7 @@ namespace glfwFunc
 		g_pTransferFunc->Resize(&WINDOW_WIDTH, &WINDOW_HEIGHT);
 		
 		//Set image Size
-		//cuda->cudaSetImageSize(iWidth, iHeight, NCP, fAngle/2.0f);
+		opencl->openCLSetImageSize(iWidth, iHeight, NCP, fAngle / 2.0f);
 		
 	}
 
@@ -286,7 +286,7 @@ namespace glfwFunc
 		printf("Vendor: %s\n", glGetString(GL_VENDOR));
 		printf("Renderer: %s\n", glGetString(GL_RENDERER));
 
-		//cuda = new CUDAClass();
+		opencl = new OpenCLClass();
 
 
 		//Init the transfer function
@@ -342,6 +342,7 @@ namespace glfwFunc
 	{
 		delete m_BackInter;
 		delete g_pTransferFunc;
+		delete opencl;
 		TextureManager::Inst()->UnloadAllTextures();
 		glfwTerminate();
 		glfwDestroyWindow(glfwWindow);
@@ -350,7 +351,8 @@ namespace glfwFunc
 
 int main(int argc, char** argv)
 {
-	something::kernel();
+	glfwFunc::opencl = new OpenCLClass();
+	glfwFunc::opencl->openCLRC();
 
 	exit(0);
 

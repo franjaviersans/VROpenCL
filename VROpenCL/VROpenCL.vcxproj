@@ -111,7 +111,6 @@
     <None Include="shaders\textureQuad.vert" />
     <None Include="shaders\TransferFunction.frag" />
     <None Include="shaders\TransferFunction.vert" />
-    <None Include="src\hello.cl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

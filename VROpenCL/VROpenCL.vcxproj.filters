@@ -85,9 +85,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="src\hello.cl">
-      <Filter>Shaders</Filter>
-    </None>
     <None Include="shaders\hit.frag">
       <Filter>Shaders</Filter>
     </None>
