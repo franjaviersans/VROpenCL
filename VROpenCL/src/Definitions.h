@@ -26,9 +26,13 @@
 
 
 
-#include "../include/GL/glew.h"
 #define GLFW_DLL
+#define GLFW_EXPOSE_NATIVE_WIN32
+#define GLFW_EXPOSE_NATIVE_WGL
+#include "../include/GL/glew.h"
 #include "../include/GLFW/glfw3.h"
+#include "../include/GLFW/glfw3native.h"
+#include "../include/GL/glew.h"
 #include "../include/AntTweakBar/AntTweakBar.h"
 #include "../include/glm/glm.hpp"
 #include "../include/glm/gtc/matrix_transform.hpp"

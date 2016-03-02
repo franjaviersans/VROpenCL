@@ -1,28 +1,26 @@
 #include "kernel.h"
 #include <iostream>
+#include <vector>
 using namespace std;
 
 
 #define opacityThreshold 0.99
 
-OpenCLClass::OpenCLClass()
+OpenCLClass::OpenCLClass(GLFWwindow* glfwWindow)
 {
 
-
-	pbo = 999999;
-
+	cl_uint ret_num_platforms;
 
 	pbo_cl = NULL;
-	device_id = NULL;
 	context = NULL;
 	command_queue = NULL;
-	memobj = NULL;
 	program = NULL;
 	kernel = NULL;
 	platform_id = NULL;
-	ret_num_devices;
-	ret_num_platforms;
-	ret;
+	d_volumeArray = NULL;
+	d_transferFuncArray = NULL;
+	volumeSamplerLinear = NULL;
+	transferFuncSampler = NULL;
 
 
 	localSize[0] = 2;
@@ -47,52 +45,153 @@ OpenCLClass::OpenCLClass()
 	fclose(fp);
 
 	/* Get Platform and Device Info */
-	ret = clGetPlatformIDs(1, &platform_id, &ret_num_platforms);
-	ret = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_DEFAULT, 1, &device_id, &ret_num_devices);
+	ciErrNum = clGetPlatformIDs(1, &platform_id, &ret_num_platforms);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+	//ciErrNum = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_GPU, 1, &device_id, &ret_num_devices);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+
+
+	// Get string containing supported device extensions
+	/*int ext_size = 1024;
+	char* ext_string = (char*)malloc(ext_size);
+	ciErrNum = clGetDeviceInfo(device_id, CL_DEVICE_EXTENSIONS, ext_size, ext_string, &ext_size);*/
+
+	cl_context_properties context_properties[] =
+	{
+		CL_GL_CONTEXT_KHR, (cl_context_properties)wglGetCurrentContext(),
+		CL_WGL_HDC_KHR, (cl_context_properties)wglGetCurrentDC(),
+		CL_CONTEXT_PLATFORM, (cl_context_properties)platform_id,
+		NULL
+	};
+	
+
+	clGetGLContextInfoKHR_fn clGetGLContextInfo = NULL;
+
+	clGetGLContextInfo = (clGetGLContextInfoKHR_fn)clGetExtensionFunctionAddress("clGetGLContextInfoKHR");
+
+	size_t bytes = 0;
+
+
+	// queuing how much bytes we need to read
+	ciErrNum |= clGetGLContextInfo(context_properties, CL_DEVICES_FOR_GL_CONTEXT_KHR, 0, NULL, &bytes);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+	// allocating the mem
+	size_t devNum = bytes / sizeof(cl_device_id);
+	std::vector<cl_device_id> devs(devNum);
+	//reading the info
+	ciErrNum |= clGetGLContextInfo(context_properties, CL_DEVICES_FOR_GL_CONTEXT_KHR, bytes, &devs[0], NULL);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+	
+	unsigned int uiDeviceUsed = -1; 
+	bool bSharingSupported = false;
+	for (unsigned int i = 0; (!bSharingSupported && (i <= devs.size())); ++i)
+	{
+		size_t extensionSize;
+		ciErrNum |= clGetDeviceInfo(devs[i], CL_DEVICE_EXTENSIONS, 0, NULL, &extensionSize);
+		oclCheckError(ciErrNum, CL_SUCCESS);
+		if (extensionSize > 0)
+		{
+			char* extensions = (char*)malloc(extensionSize);
+			ciErrNum = clGetDeviceInfo(devs[i], CL_DEVICE_EXTENSIONS, extensionSize, extensions, &extensionSize);
+			oclCheckError(ciErrNum, CL_SUCCESS);
+			std::string stdDevString(extensions);
+			free(extensions);
+
+			size_t szOldPos = 0;
+			size_t szSpacePos = stdDevString.find(' ', szOldPos); // extensions string is space delimited
+			while (szSpacePos != stdDevString.npos)
+			{
+				if (strcmp(GL_SHARING_EXTENSION, stdDevString.substr(szOldPos, szSpacePos - szOldPos).c_str()) == 0)
+				{
+					// Device supports context sharing with OpenGL
+					uiDeviceUsed = i;
+					bSharingSupported = true;
+					break;
+				}
+				do
+				{
+					szOldPos = szSpacePos + 1;
+					szSpacePos = stdDevString.find(' ', szOldPos);
+				} while (szSpacePos == szOldPos);
+			}
+		}
+	}
+	
 
 	/* Create OpenCL context */
-	context = clCreateContext(NULL, 1, &device_id, NULL, NULL, &ret);
+	context = clCreateContext(context_properties, 1, &devs[uiDeviceUsed], NULL, NULL, &ciErrNum);
+	oclCheckError(ciErrNum, CL_SUCCESS);
 
 	/* Create Command Queue */
-	command_queue = clCreateCommandQueue(context, device_id, 0, &ret);
+	command_queue = clCreateCommandQueue(context, devs[uiDeviceUsed], 0, &ciErrNum);
+	oclCheckError(ciErrNum, CL_SUCCESS);
 
 	/* Create Kernel Program from the source */
-	program = clCreateProgramWithSource(context, 1, (const char **)&source_str,
-		(const size_t *)&source_size, &ret);
+	program = clCreateProgramWithSource(context, 1, (const char **)&source_str, (const size_t *)&source_size, &ciErrNum);
+	oclCheckError(ciErrNum, CL_SUCCESS);
 
 	/* Build Kernel Program */
-	ret = clBuildProgram(program, 1, &device_id, NULL, NULL, NULL);
+	ciErrNum = clBuildProgram(program, 1, &devs[uiDeviceUsed], NULL, NULL, NULL);
+
+
+	//Check errors in opencl kernel
+	if (ciErrNum == CL_BUILD_PROGRAM_FAILURE) {
+		// Determine the size of the log
+		size_t log_size;
+		clGetProgramBuildInfo(program, devs[uiDeviceUsed], CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);
+
+		// Allocate memory for the log
+		char *log = (char *)malloc(log_size);
+
+		// Get the log
+		clGetProgramBuildInfo(program, devs[uiDeviceUsed], CL_PROGRAM_BUILD_LOG, log_size, log, NULL);
+
+		// Print the log
+		printf("%s\n", log);
+	}
+
+
+	oclCheckError(ciErrNum, CL_SUCCESS);
 
 	/* Create OpenCL Kernel */
-	kernel = clCreateKernel(program, "volumeRendering", &ret);
+	kernel = clCreateKernel(program, "volumeRendering", &ciErrNum);
+	oclCheckError(ciErrNum, CL_SUCCESS);
 
 	free(source_str);
 
 
 
-	// init invViewMatrix
-	d_invViewMatrix = clCreateBuffer(context, CL_MEM_READ_ONLY, 12 * sizeof(float), 0, &ciErrNum);
+	d_invViewMatrix = clCreateBuffer(context, CL_MEM_READ_ONLY, 16 * sizeof(float), 0, &ciErrNum);
+	oclCheckError(ciErrNum, CL_SUCCESS);
 }
 
 OpenCLClass::~OpenCLClass()
 {
 	/* Finalization */
-	if (volumeSamplerLinear)clReleaseSampler(volumeSamplerLinear);
-	if (transferFuncSampler)clReleaseSampler(transferFuncSampler);
-	if (d_volumeArray)clReleaseMemObject(d_volumeArray);
-	if (d_transferFuncArray)clReleaseMemObject(d_transferFuncArray);
-	if (pbo_cl)clReleaseMemObject(pbo_cl);
-	if (d_invViewMatrix)clReleaseMemObject(d_invViewMatrix);
-	ret = clFlush(command_queue);
-	ret = clFinish(command_queue);
-	ret = clReleaseKernel(kernel);
-	ret = clReleaseProgram(program);
-	ret = clReleaseMemObject(memobj);
-	ret = clReleaseCommandQueue(command_queue);
-	ret = clReleaseContext(context);
-
-	if (pbo != 999999)
-	glDeleteBuffers(1, &pbo);	
+	if (volumeSamplerLinear)ciErrNum |= clReleaseSampler(volumeSamplerLinear);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+	if (transferFuncSampler)ciErrNum |= clReleaseSampler(transferFuncSampler);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+	if (d_volumeArray)ciErrNum |= clReleaseMemObject(d_volumeArray);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+	if (d_transferFuncArray)ciErrNum |= clReleaseMemObject(d_transferFuncArray);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+	if (pbo_cl)ciErrNum |= clReleaseMemObject(pbo_cl);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+	if (d_invViewMatrix)ciErrNum |= clReleaseMemObject(d_invViewMatrix);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+	ciErrNum |= clFlush(command_queue);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+	ciErrNum |= clFinish(command_queue);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+	ciErrNum |= clReleaseKernel(kernel);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+	ciErrNum |= clReleaseProgram(program);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+	ciErrNum |= clReleaseCommandQueue(command_queue);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+	ciErrNum |= clReleaseContext(context);
+	oclCheckError(ciErrNum, CL_SUCCESS);
 }
 
 
@@ -102,12 +201,13 @@ void OpenCLClass::openCLRC(/*, unsigned int width, unsigned int height, float h,
 
 	glFinish();
 	// Acquire PBO for OpenCL writing
-	ciErrNum = clEnqueueAcquireGLObjects(command_queue, 1, &pbo_cl, 0, 0, 0);
-
+	ciErrNum |= clEnqueueAcquireGLObjects(command_queue, 1, &pbo_cl, 0, 0, 0);
+	ciErrNum |= clEnqueueAcquireGLObjects(command_queue, 1, &d_transferFuncArray, 0, 0, 0);
+	oclCheckError(ciErrNum, CL_SUCCESS);
 
 	/* Execute OpenCL Kernel */
-	ciErrNum = clEnqueueNDRangeKernel(command_queue, kernel, 2, NULL, globalSize, localSize, 0, 0, 0);
-
+	ciErrNum |= clEnqueueNDRangeKernel(command_queue, kernel, 2, NULL, globalSize, localSize, 0, 0, 0);
+	oclCheckError(ciErrNum, CL_SUCCESS);
 
 	/* Execute OpenCL Kernel */
 	//ret = clEnqueueTask(command_queue, kernel, 0, NULL, NULL);
@@ -119,7 +219,10 @@ void OpenCLClass::openCLRC(/*, unsigned int width, unsigned int height, float h,
 
 	//finish 
 	clFinish(command_queue);
-	ciErrNum = clEnqueueReleaseGLObjects(command_queue, 1, &pbo_cl, 0, 0, 0);
+	ciErrNum |= clEnqueueReleaseGLObjects(command_queue, 1, &pbo_cl, 0, 0, 0);
+	ciErrNum |= clEnqueueReleaseGLObjects(command_queue, 1, &d_transferFuncArray, 0, 0, 0);
+
+	oclCheckError(ciErrNum, CL_SUCCESS);
 }
 
 
@@ -140,28 +243,42 @@ void OpenCLClass::openCLSetVolume(cl_char *vol, unsigned int width, unsigned int
 		h_tempVolume, &ciErrNum);
 	free(h_tempVolume);
 
+
+	/*if (d_volumeArray != NULL) {
+		// delete old buffer
+		clReleaseMemObject(d_transferFuncArray);
+	}
+
+	d_volumeArray = clCreateFromGLTexture(context, CL_MEM_READ_ONLY, GL_TEXTURE_3D, 0, TextureManager::Inst()->GetID(TEXTURE_VOLUME), &ciErrNum);
+	oclCheckError(ciErrNum, CL_SUCCESS);*/
+
+
+	volumeSamplerLinear = clCreateSampler(context, CL_TRUE, CL_ADDRESS_REPEAT, CL_FILTER_LINEAR, &ciErrNum);
+
 	// set image and sampler args
-	ciErrNum = clSetKernelArg(kernel, 7, sizeof(cl_mem), (void *)&d_volumeArray);
-	ciErrNum = clSetKernelArg(kernel, 9, sizeof(cl_sampler), &volumeSamplerLinear);
+	ciErrNum |= clSetKernelArg(kernel, 7, sizeof(cl_mem), (void *)&d_volumeArray);
+	ciErrNum |= clSetKernelArg(kernel, 9, sizeof(cl_sampler), &volumeSamplerLinear);
 
 	//Set the step
 	float step = 1.f / diagonal;
-	ciErrNum = clSetKernelArg(kernel, 1, sizeof(unsigned int), &diagonal);
+	ciErrNum |= clSetKernelArg(kernel, 1, sizeof(float), &step);
+
+	oclCheckError(ciErrNum, CL_SUCCESS);
 }
 
 
 void OpenCLClass::openCLSetImageSize(unsigned int width, unsigned int height, float NCP, float angle){
-	globalSize[0] = width;
-	globalSize[1] = height;
-	Width = width;
-	Height = height;
+	int r = width % localSize[0];
+	globalSize[0] = (r == 0) ? width : width + localSize[0] - r;
+	r = width % localSize[1];
+	globalSize[1] = (r == 0) ? width : width + localSize[1] - r;
 
 
 
-	/*if (pbo != 999999) {
+	if (pbo_cl != NULL) {
 		// delete old buffer
 		clReleaseMemObject(pbo_cl);
-	}*/
+	}
 
 	// create pixel buffer object for display
 	/*if (pbo == 999999) glGenBuffers(1, &pbo);
@@ -170,55 +287,83 @@ void OpenCLClass::openCLSetImageSize(unsigned int width, unsigned int height, fl
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);*/
 
 
-
+	oclCheckError(ciErrNum, CL_SUCCESS);
 	// create OpenCL buffer from GL PBO
 	//pbo_cl = clCreateFromGLBuffer(context, CL_MEM_WRITE_ONLY, pbo, &ciErrNum);
-	pbo_cl = clCreateFromGLTexture(context, CL_MEM_WRITE_ONLY,
-		GL_TEXTURE_2D, 0, TextureManager::Inst()->GetID(TEXTURE_FINAL_IMAGE), NULL);
+	pbo_cl = clCreateFromGLTexture(context, CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, TextureManager::Inst()->GetID(TEXTURE_FINAL_IMAGE), &ciErrNum);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+
+	ciErrNum |= clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&pbo_cl);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+	ciErrNum |= clSetKernelArg(kernel, 4, sizeof(unsigned int), (void *)&width);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+	ciErrNum |= clSetKernelArg(kernel, 5, sizeof(unsigned int), &height);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+	ciErrNum |= clSetKernelArg(kernel, 2, sizeof(float), &angle);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+	ciErrNum |= clSetKernelArg(kernel, 3, sizeof(float), &NCP);
 
 	
-
-	ciErrNum = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&pbo_cl);
-	ciErrNum = clSetKernelArg(kernel, 4, sizeof(unsigned int), &width);
-	ciErrNum = clSetKernelArg(kernel, 5, sizeof(unsigned int), &height);
-
-	ciErrNum = clSetKernelArg(kernel, 2, sizeof(unsigned int), &angle);
-	ciErrNum = clSetKernelArg(kernel, 3, sizeof(unsigned int), &NCP);
-	
+	oclCheckError(ciErrNum, CL_SUCCESS);
 }
 
 
 void OpenCLClass::openCLUpdateMatrix(const float * matrix){
-	ciErrNum = clEnqueueWriteBuffer(command_queue, d_invViewMatrix, CL_FALSE, 0, 16 * sizeof(float), matrix, 0, 0, 0);
-	ciErrNum = clSetKernelArg(kernel, 6, sizeof(cl_mem), (void *)&d_invViewMatrix);
+	ciErrNum |= clEnqueueWriteBuffer(command_queue, d_invViewMatrix, CL_FALSE, 0, 16 * sizeof(float), matrix, 0, 0, 0);
+	ciErrNum |= clSetKernelArg(kernel, 6, sizeof(cl_mem), (void *)&d_invViewMatrix);
+
+	oclCheckError(ciErrNum, CL_SUCCESS);
 }
 
 
 void OpenCLClass::openCLSetTransferFunction(cl_float4 *transferFunction, unsigned int width){
-	cl_image_format transferFunc_format;
+	/*cl_image_format transferFunc_format;
 	transferFunc_format.image_channel_order = CL_RGBA;
 	transferFunc_format.image_channel_data_type = CL_FLOAT;
-	d_transferFuncArray = clCreateImage2D(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-		&transferFunc_format, 9, 1, sizeof(float) * 9 * 4, transferFunction, &ciErrNum);
+	
+	cl_image_desc image_desc;
+	image_desc.image_type = CL_MEM_OBJECT_IMAGE2D;
+	image_desc.image_width = width;
+	image_desc.image_height = 1;
+	image_desc.image_depth = 0;
+	image_desc.image_row_pitch = width * sizeof(cl_float4);
+	image_desc.num_mip_levels = 0;
+	image_desc.num_samples = 0;
+	image_desc.buffer = 0;
+
+	d_transferFuncArray = clCreateImage(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+		&transferFunc_format, &image_desc, transferFunction, &ciErrNum);*/
+
+
+	
+	
+	if (d_transferFuncArray != NULL) {
+		// delete old buffer
+		clReleaseMemObject(d_transferFuncArray);
+	}
+	
+	
+	//Pass texture to Opencl
+	d_transferFuncArray = clCreateFromGLTexture(context, CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, TextureManager::Inst()->GetID(TEXTURE_TRANSFER_FUNC), &ciErrNum);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+
 
 	// Create samplers for transfer function, linear interpolation and nearest interpolation 
-	transferFuncSampler = clCreateSampler(context, true, CL_ADDRESS_CLAMP_TO_EDGE, CL_FILTER_LINEAR, &ciErrNum);
-	volumeSamplerLinear = clCreateSampler(context, true, CL_ADDRESS_REPEAT, CL_FILTER_LINEAR, &ciErrNum);
+	transferFuncSampler = clCreateSampler(context, CL_TRUE, CL_ADDRESS_CLAMP_TO_EDGE, CL_FILTER_LINEAR, &ciErrNum);
+
+
 	
 	// set image and sampler args
-	ciErrNum = clSetKernelArg(kernel, 8, sizeof(cl_mem), (void *)&d_transferFuncArray);
-	ciErrNum = clSetKernelArg(kernel, 10, sizeof(cl_sampler), &transferFuncSampler);
+	ciErrNum |= clSetKernelArg(kernel, 8, sizeof(cl_mem), (void *)&d_transferFuncArray);
+	ciErrNum |= clSetKernelArg(kernel, 10, sizeof(cl_sampler), &transferFuncSampler);
+
+	oclCheckError(ciErrNum, CL_SUCCESS);
 }
 
 
 
 void OpenCLClass::Use(GLenum activeTexture){
-	//glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
 	// copy from pbo to texture
-	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo);
 	glActiveTexture(activeTexture);
 	TextureManager::Inst()->BindTexture(TEXTURE_FINAL_IMAGE);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, Width, Height, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 }

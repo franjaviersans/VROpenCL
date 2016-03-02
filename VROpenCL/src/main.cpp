@@ -29,7 +29,7 @@ namespace glfwFunc
 	//Declare the transfer function
 	TransferFunction *g_pTransferFunc;
 
-	//Class to wrap cuda code
+	//Class to wrap opencl code
 	OpenCLClass * opencl;
 
 	float color[]={1,1,1};
@@ -201,7 +201,7 @@ namespace glfwFunc
 
 		mMVP = mProjMatrix * mModelViewMatrix;
 
-		//cuda->cudaUpdateMatrix(glm::value_ptr(glm::transpose(glm::inverse(mModelViewMatrix))));
+		opencl->openCLUpdateMatrix(glm::value_ptr(glm::transpose(glm::inverse(mModelViewMatrix))));
 
 		/*//Obtain Back hits
 		m_BackInter->Draw(mMVP);
@@ -209,8 +209,8 @@ namespace glfwFunc
 		m_FrontInter->Draw(mMVP);*/
 
 
-		//CUDA volume ray casting
-		//cuda->cudaRC();
+		//Opencl volume ray casting
+		opencl->openCLRC();
 
 
 		
@@ -223,7 +223,7 @@ namespace glfwFunc
 		//Blend with bg
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-		//cuda->Use(GL_TEXTURE0); //Use the texture
+		opencl->Use(GL_TEXTURE0); //Use the texture
 		m_FinalImage->Draw();
 		glDisable(GL_BLEND);
 
@@ -286,14 +286,14 @@ namespace glfwFunc
 		printf("Vendor: %s\n", glGetString(GL_VENDOR));
 		printf("Renderer: %s\n", glGetString(GL_RENDERER));
 
-		opencl = new OpenCLClass();
+		opencl = new OpenCLClass(glfwWindow);
 
 
 		//Init the transfer function
 		g_pTransferFunc = new TransferFunction();
 		g_pTransferFunc->InitContext(glfwWindow, &WINDOW_WIDTH, &WINDOW_HEIGHT, -1, -1);
 
-		//cuda->cudaSetTransferFunction((float4 *)g_pTransferFunc->colorPalette, 256);
+		opencl->openCLSetTransferFunction((cl_float4 *)g_pTransferFunc->colorPalette, 256);
 
 		TwInit(TW_OPENGL_CORE, NULL);
 		TwWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -323,7 +323,7 @@ namespace glfwFunc
 		volume = new Volume();
 		volume->Load("Raw/foot_8_256_256_256.raw", 256, 256, 256);
 
-		//cuda->cudaSetVolume((char1 *)volume->volume, 256, 256, 256, volume->m_fDiagonal);
+		opencl->openCLSetVolume((cl_char *)volume->volume, 256, 256, 256, volume->m_fDiagonal);
 
 		
 
@@ -351,10 +351,6 @@ namespace glfwFunc
 
 int main(int argc, char** argv)
 {
-	glfwFunc::opencl = new OpenCLClass();
-	glfwFunc::opencl->openCLRC();
-
-	exit(0);
 
 	glfwSetErrorCallback(glfwFunc::errorCB);
 	if (!glfwInit())	exit(EXIT_FAILURE);
@@ -364,11 +360,6 @@ int main(int argc, char** argv)
 		glfwTerminate();
 		exit(EXIT_FAILURE);
 	}
-
-
-
-
-	
 
 	glfwMakeContextCurrent(glfwFunc::glfwWindow);
 	if(!glfwFunc::initialize()) exit(EXIT_FAILURE);
@@ -382,7 +373,7 @@ int main(int argc, char** argv)
 		{
 			//glfwFunc::g_pTransferFunc->UpdatePallete();
 			glfwFunc::g_pTransferFunc->updateTexture = false;
-			//glfwFunc::cuda->cudaSetTransferFunction((float4 *)glfwFunc::g_pTransferFunc->colorPalette, 256);
+			glfwFunc::opencl->openCLSetTransferFunction((cl_float4 *)glfwFunc::g_pTransferFunc->colorPalette, 256);
 		}
 		glfwFunc::draw();
 		glfwPollEvents();	//or glfwWaitEvents()
