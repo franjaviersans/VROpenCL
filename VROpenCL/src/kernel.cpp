@@ -23,8 +23,8 @@ OpenCLClass::OpenCLClass(GLFWwindow* glfwWindow)
 	transferFuncSampler = NULL;
 
 
-	localSize[0] = 2;
-	localSize[1] = 2;
+	localSize[0] = 16;
+	localSize[1] = 16;
 
 	globalSize[0] = 10;
 	globalSize[1] = 10;
@@ -203,6 +203,7 @@ void OpenCLClass::openCLRC(/*, unsigned int width, unsigned int height, float h,
 	// Acquire PBO for OpenCL writing
 	ciErrNum |= clEnqueueAcquireGLObjects(command_queue, 1, &pbo_cl, 0, 0, 0);
 	ciErrNum |= clEnqueueAcquireGLObjects(command_queue, 1, &d_transferFuncArray, 0, 0, 0);
+	ciErrNum |= clEnqueueAcquireGLObjects(command_queue, 1, &d_volumeArray, 0, 0, 0);
 	oclCheckError(ciErrNum, CL_SUCCESS);
 
 	/* Execute OpenCL Kernel */
@@ -221,6 +222,7 @@ void OpenCLClass::openCLRC(/*, unsigned int width, unsigned int height, float h,
 	clFinish(command_queue);
 	ciErrNum |= clEnqueueReleaseGLObjects(command_queue, 1, &pbo_cl, 0, 0, 0);
 	ciErrNum |= clEnqueueReleaseGLObjects(command_queue, 1, &d_transferFuncArray, 0, 0, 0);
+	ciErrNum |= clEnqueueReleaseGLObjects(command_queue, 1, &d_volumeArray, 0, 0, 0);
 
 	oclCheckError(ciErrNum, CL_SUCCESS);
 }
@@ -229,7 +231,7 @@ void OpenCLClass::openCLRC(/*, unsigned int width, unsigned int height, float h,
 void OpenCLClass::openCLSetVolume(cl_char *vol, unsigned int width, unsigned int height, unsigned int depth, float diagonal)
 {
 	// create 3D array and copy data to device
-	cl_image_format volume_format;
+	/*cl_image_format volume_format;
 	volume_format.image_channel_order = CL_RGBA;
 	volume_format.image_channel_data_type = CL_UNORM_INT8;
 	cl_uchar* h_tempVolume = (cl_uchar*)malloc(width * height * depth * 4);
@@ -241,19 +243,20 @@ void OpenCLClass::openCLSetVolume(cl_char *vol, unsigned int width, unsigned int
 		width, height, depth,
 		(width * 4), (width * height * 4),
 		h_tempVolume, &ciErrNum);
-	free(h_tempVolume);
+	free(h_tempVolume);*/
 
 
-	/*if (d_volumeArray != NULL) {
+	if (d_volumeArray != NULL) {
 		// delete old buffer
 		clReleaseMemObject(d_transferFuncArray);
 	}
 
+
 	d_volumeArray = clCreateFromGLTexture(context, CL_MEM_READ_ONLY, GL_TEXTURE_3D, 0, TextureManager::Inst()->GetID(TEXTURE_VOLUME), &ciErrNum);
-	oclCheckError(ciErrNum, CL_SUCCESS);*/
+	oclCheckError(ciErrNum, CL_SUCCESS);
 
 
-	volumeSamplerLinear = clCreateSampler(context, CL_TRUE, CL_ADDRESS_REPEAT, CL_FILTER_LINEAR, &ciErrNum);
+	volumeSamplerLinear = clCreateSampler(context, CL_TRUE, CL_ADDRESS_CLAMP, CL_FILTER_LINEAR, &ciErrNum);
 
 	// set image and sampler args
 	ciErrNum |= clSetKernelArg(kernel, 7, sizeof(cl_mem), (void *)&d_volumeArray);
@@ -295,16 +298,15 @@ void OpenCLClass::openCLSetImageSize(unsigned int width, unsigned int height, fl
 
 	ciErrNum |= clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&pbo_cl);
 	oclCheckError(ciErrNum, CL_SUCCESS);
-	ciErrNum |= clSetKernelArg(kernel, 4, sizeof(unsigned int), (void *)&width);
-	oclCheckError(ciErrNum, CL_SUCCESS);
-	ciErrNum |= clSetKernelArg(kernel, 5, sizeof(unsigned int), &height);
-	oclCheckError(ciErrNum, CL_SUCCESS);
 	ciErrNum |= clSetKernelArg(kernel, 2, sizeof(float), &angle);
 	oclCheckError(ciErrNum, CL_SUCCESS);
 	ciErrNum |= clSetKernelArg(kernel, 3, sizeof(float), &NCP);
-
-	
 	oclCheckError(ciErrNum, CL_SUCCESS);
+	ciErrNum |= clSetKernelArg(kernel, 4, sizeof(unsigned int), &width);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+	ciErrNum |= clSetKernelArg(kernel, 5, sizeof(unsigned int), &height);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+	
 }
 
 
