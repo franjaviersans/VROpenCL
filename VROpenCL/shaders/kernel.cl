@@ -88,8 +88,8 @@ __kernel void volumeRendering(	__write_only image2d_t d_output,
 
 
 		//ok u and v between -1 and 1
-		float u = ((global_id.x / (float)constantWidth)*2.0f - 1.0f);
-		float v = ((global_id.y / (float)768.0f)*2.0f - 1.0f);
+		float u = (((global_id.x + 0.5f) / (float)constantWidth)*2.0f - 1.0f);
+		float v = (((global_id.y + 0.5f) / (float)constantHeight)*2.0f - 1.0f);
 
 
 

@@ -210,13 +210,6 @@ void OpenCLClass::openCLRC(/*, unsigned int width, unsigned int height, float h,
 	ciErrNum |= clEnqueueNDRangeKernel(command_queue, kernel, 2, NULL, globalSize, localSize, 0, 0, 0);
 	oclCheckError(ciErrNum, CL_SUCCESS);
 
-	/* Execute OpenCL Kernel */
-	//ret = clEnqueueTask(command_queue, kernel, 0, NULL, NULL);
-
-	/* Copy results from the memory buffer */
-	/*ret = clEnqueueReadBuffer(command_queue, memobj, CL_TRUE, 0,
-		MEM_SIZE * sizeof(char), string, 0, NULL, NULL);*/
-
 
 	//finish 
 	clFinish(command_queue);
@@ -230,22 +223,6 @@ void OpenCLClass::openCLRC(/*, unsigned int width, unsigned int height, float h,
 
 void OpenCLClass::openCLSetVolume(cl_char *vol, unsigned int width, unsigned int height, unsigned int depth, float diagonal)
 {
-	// create 3D array and copy data to device
-	/*cl_image_format volume_format;
-	volume_format.image_channel_order = CL_RGBA;
-	volume_format.image_channel_data_type = CL_UNORM_INT8;
-	cl_uchar* h_tempVolume = (cl_uchar*)malloc(width * height * depth * 4);
-	for (int i = 0; i <(int)(width * height * depth); i++)
-	{
-		h_tempVolume[4 * i] = vol[i];
-	}
-	d_volumeArray = clCreateImage3D(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, &volume_format,
-		width, height, depth,
-		(width * 4), (width * height * 4),
-		h_tempVolume, &ciErrNum);
-	free(h_tempVolume);*/
-
-
 	if (d_volumeArray != NULL) {
 		// delete old buffer
 		clReleaseMemObject(d_transferFuncArray);
@@ -273,8 +250,8 @@ void OpenCLClass::openCLSetVolume(cl_char *vol, unsigned int width, unsigned int
 void OpenCLClass::openCLSetImageSize(unsigned int width, unsigned int height, float NCP, float angle){
 	int r = width % localSize[0];
 	globalSize[0] = (r == 0) ? width : width + localSize[0] - r;
-	r = width % localSize[1];
-	globalSize[1] = (r == 0) ? width : width + localSize[1] - r;
+	r = height % localSize[1];
+	globalSize[1] = (r == 0) ? height : height + localSize[1] - r;
 
 
 
@@ -283,16 +260,9 @@ void OpenCLClass::openCLSetImageSize(unsigned int width, unsigned int height, fl
 		clReleaseMemObject(pbo_cl);
 	}
 
-	// create pixel buffer object for display
-	/*if (pbo == 999999) glGenBuffers(1, &pbo);
-	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo);
-	glBufferData(GL_PIXEL_UNPACK_BUFFER, width * height * sizeof(GLubyte) * 4, 0, GL_STREAM_DRAW);
-	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);*/
-
 
 	oclCheckError(ciErrNum, CL_SUCCESS);
 	// create OpenCL buffer from GL PBO
-	//pbo_cl = clCreateFromGLBuffer(context, CL_MEM_WRITE_ONLY, pbo, &ciErrNum);
 	pbo_cl = clCreateFromGLTexture(context, CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, TextureManager::Inst()->GetID(TEXTURE_FINAL_IMAGE), &ciErrNum);
 	oclCheckError(ciErrNum, CL_SUCCESS);
 
@@ -319,25 +289,6 @@ void OpenCLClass::openCLUpdateMatrix(const float * matrix){
 
 
 void OpenCLClass::openCLSetTransferFunction(cl_float4 *transferFunction, unsigned int width){
-	/*cl_image_format transferFunc_format;
-	transferFunc_format.image_channel_order = CL_RGBA;
-	transferFunc_format.image_channel_data_type = CL_FLOAT;
-	
-	cl_image_desc image_desc;
-	image_desc.image_type = CL_MEM_OBJECT_IMAGE2D;
-	image_desc.image_width = width;
-	image_desc.image_height = 1;
-	image_desc.image_depth = 0;
-	image_desc.image_row_pitch = width * sizeof(cl_float4);
-	image_desc.num_mip_levels = 0;
-	image_desc.num_samples = 0;
-	image_desc.buffer = 0;
-
-	d_transferFuncArray = clCreateImage(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-		&transferFunc_format, &image_desc, transferFunction, &ciErrNum);*/
-
-
-	
 	
 	if (d_transferFuncArray != NULL) {
 		// delete old buffer
