@@ -22,8 +22,8 @@ namespace glfwFunc
 	int WINDOW_HEIGHT = 768;
 	std::string strNameWindow = "OpenCL Volume Ray Casting";
 
-	const float NCP = 0.01f;
-	const float FCP = 45.0f;
+	const float NCP = 1.0f;
+	const float FCP = 10.0f;
 	const float fAngle = 45.f * (3.14f / 180.0f); //In radians
 
 	//Declare the transfer function
