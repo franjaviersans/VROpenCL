@@ -149,18 +149,19 @@ inline void __oclCheckErrorEX(cl_int iSample, cl_int iReference, void(*pCleanup)
 class OpenCLClass
 {
 public:
-	OpenCLClass(GLFWwindow* glfwWindow);
+	OpenCLClass(GLFWwindow* glfwWindow, glm::ivec2 dim = glm::ivec2(16,16));
 	~OpenCLClass();
 	
-	cl_float4 *d_lastHit, *d_FirstHit;
+	
 	//cudaArray *d_volume, *d_texture;
 	//struct cudaGraphicsResource *cuda_pbo_resource; // CUDA Graphics Resource (to transfer PBO)
-
+#ifndef NOT_RAY_BOX
 	void openCLUpdateMatrix(const float * matrix);
+#endif
 	void openCLRC(/*, unsigned int, unsigned int, float, float4 *, float4 **/);
-	void openCLSetVolume(cl_char *vol, unsigned int width, unsigned int height, unsigned int depth, float diagonal);
+	void openCLSetVolume(unsigned int width, unsigned int height, unsigned int depth, float diagonal);
 	void openCLSetImageSize(unsigned int width, unsigned int height, float NCP, float angle);
-	void openCLSetTransferFunction(cl_float4 *d_transferFunction, unsigned int width = 256);
+	void openCLSetTransferFunction();
 	void Use(GLenum activeTexture);
 
 
@@ -174,11 +175,12 @@ private:
 	size_t localSize[2];
 	cl_mem d_invViewMatrix;
 	cl_int ciErrNum;
-	cl_mem pbo_cl;
-	cl_mem d_volumeArray;
-	cl_mem d_transferFuncArray;
-	cl_sampler volumeSamplerLinear;
-	cl_sampler transferFuncSampler;
+	cl_mem pbo_cl, d_volumeArray, d_transferFuncArray;
+	cl_sampler volumeSamplerLinear, transferFuncSampler;
+
+#ifdef NOT_RAY_BOX
+	cl_mem d_textureFirst, d_textureLast;
+#endif
 };
 
 

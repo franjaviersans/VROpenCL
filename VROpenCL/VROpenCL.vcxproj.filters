@@ -106,5 +106,8 @@
     <None Include="shaders\TransferFunction.vert">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="shaders\kernelImage.cl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

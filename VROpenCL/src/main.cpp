@@ -32,6 +32,7 @@ namespace glfwFunc
 	char * volume_filepath = "./Raw/volume.raw";
 	char * transfer_func_filepath = NULL;
 	glm::ivec3 vol_size = glm::ivec3(256, 256, 256);
+	glm::ivec2 block_dimension = glm::ivec2(16, 16);
 
 	//Class to wrap opencl code
 	OpenCLClass * opencl;
@@ -49,7 +50,9 @@ namespace glfwFunc
 	double lastx, lasty;
 	bool pres = false;
 
+#ifdef NOT_RAY_BOX
 	CCubeIntersection *m_BackInter, *m_FrontInter;
+#endif
 	CFinalImage *m_FinalImage;
 
 
@@ -156,8 +159,10 @@ namespace glfwFunc
 		mProjMatrix = glm::perspective(float(fAngle), ratio, 1.0f, 10.0f);
 
 		// Update size in some buffers!!!
+#ifdef NOT_RAY_BOX
 		m_BackInter->SetResolution(iWidth, iHeight);
 		m_FrontInter->SetResolution(iWidth, iHeight);
+#endif
 		m_FinalImage->SetResolution(iWidth, iHeight);
 		g_pTransferFunc->Resize(&WINDOW_WIDTH, &WINDOW_HEIGHT);
 		
@@ -184,12 +189,15 @@ namespace glfwFunc
 
 		mMVP = mProjMatrix * mModelViewMatrix;
 
+#ifndef NOT_RAY_BOX
 		opencl->openCLUpdateMatrix(glm::value_ptr(glm::transpose(glm::inverse(mModelViewMatrix))));
-
-		/*//Obtain Back hits
+#else
+		//Obtain Back hits
 		m_BackInter->Draw(mMVP);
 		//Obtain the front hits
-		m_FrontInter->Draw(mMVP);*/
+		m_FrontInter->Draw(mMVP);
+#endif
+
 
 
 		//Opencl volume ray casting
@@ -254,14 +262,14 @@ namespace glfwFunc
 		printf("Vendor: %s\n", glGetString(GL_VENDOR));
 		printf("Renderer: %s\n", glGetString(GL_RENDERER));
 
-		opencl = new OpenCLClass(glfwWindow);
+		opencl = new OpenCLClass(glfwWindow, block_dimension);
 
 
 		//Init the transfer function
 		g_pTransferFunc = new TransferFunction();
 		g_pTransferFunc->InitContext(glfwWindow, &WINDOW_WIDTH, &WINDOW_HEIGHT, transfer_func_filepath, -1, -1);
 
-		opencl->openCLSetTransferFunction((cl_float4 *)g_pTransferFunc->colorPalette, 256);
+		opencl->openCLSetTransferFunction();
 
 
 		// send window size events to AntTweakBar
@@ -276,13 +284,14 @@ namespace glfwFunc
 		volume = new Volume();
 		volume->Load(volume_filepath, vol_size.x, vol_size.y, vol_size.z);
 
-		opencl->openCLSetVolume((cl_char *)volume->volume, vol_size.x, vol_size.y, vol_size.z, volume->m_fDiagonal);
+		opencl->openCLSetVolume(vol_size.x, vol_size.y, vol_size.z, volume->m_fDiagonal);
 
 		
 
-
+#ifdef NOT_RAY_BOX
 		m_BackInter = new CCubeIntersection(false, WINDOW_WIDTH, WINDOW_HEIGHT);
 		m_FrontInter = new CCubeIntersection(true, WINDOW_WIDTH, WINDOW_HEIGHT);
+#endif
 		m_FinalImage = new CFinalImage(WINDOW_WIDTH, WINDOW_HEIGHT);
 
 
@@ -293,8 +302,10 @@ namespace glfwFunc
 	/// Here all data must be destroyed + glfwTerminate
 	void destroy()
 	{
+#ifdef NOT_RAY_BOX
 		delete m_BackInter;
 		delete g_pTransferFunc;
+#endif
 		delete opencl;
 		TextureManager::Inst()->UnloadAllTextures();
 		glfwTerminate();
@@ -305,7 +316,7 @@ namespace glfwFunc
 int main(int argc, char** argv)
 {
 
-	if (argc == 5 || argc == 6) {
+	if (argc == 7 || argc == 8) {
 
 		//Copy volume file path
 		glfwFunc::volume_filepath = new char[strlen(argv[1]) + 1];
@@ -315,14 +326,17 @@ int main(int argc, char** argv)
 		int width = atoi(argv[2]), height = atoi(argv[3]), depth = atoi(argv[4]);
 		glfwFunc::vol_size = glm::ivec3(width, height, depth);
 
+		glfwFunc::block_dimension.x = atoi(argv[5]);
+		glfwFunc::block_dimension.y = atoi(argv[6]);
+
 		//Copy volume transfer function path
-		if (argc == 6){
-			glfwFunc::transfer_func_filepath = new char[strlen(argv[5]) + 1];
-			strncpy_s(glfwFunc::transfer_func_filepath, strlen(argv[5]) + 1, argv[5], strlen(argv[5]));
+		if (argc == 8){
+			glfwFunc::transfer_func_filepath = new char[strlen(argv[7]) + 1];
+			strncpy_s(glfwFunc::transfer_func_filepath, strlen(argv[7]) + 1, argv[7], strlen(argv[7]));
 		}
 
 	}
-	else if (argc > 6) {
+	else if (argc > 8) {
 		printf("Too many arguments supplied!!!! \n");
 	}
 
@@ -347,7 +361,7 @@ int main(int argc, char** argv)
 		{
 			//glfwFunc::g_pTransferFunc->UpdatePallete();
 			glfwFunc::g_pTransferFunc->updateTexture = false;
-			glfwFunc::opencl->openCLSetTransferFunction((cl_float4 *)glfwFunc::g_pTransferFunc->colorPalette, 256);
+			glfwFunc::opencl->openCLSetTransferFunction();
 		}
 		glfwFunc::draw();
 		glfwPollEvents();	//or glfwWaitEvents()
