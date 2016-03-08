@@ -60,17 +60,17 @@ int intersectBox(struct Ray r, float *tnear, float *tfar)
 
 
 
-__kernel void volumeRendering(	__write_only image2d_t d_output,
-								float constantH, 
-								float constantAngle, 
-								float cosntantNCP,
-								unsigned int constantWidth, 
-								unsigned int constantHeight,
-								__constant float * c_invViewMatrix, 
-								__read_only image3d_t volume,
-								__read_only image2d_t transferFunc,
-								sampler_t volumeSampler,
-								sampler_t transferFuncSampler)
+__kernel void volumeRendering(__write_only image2d_t d_output,						/*0*/
+								float constantH,									/*1*/
+								unsigned int constantWidth, 						/*2*/
+								unsigned int constantHeight, 						/*3*/
+								__read_only image3d_t volume, 						/*4*/
+								__read_only image2d_t transferFunc, 				/*5*/
+								sampler_t volumeSampler, 							/*6*/
+								sampler_t transferFuncSampler, 						/*7*/
+								__constant float * c_invViewMatrix, 				/*8*/
+								float constantAngle, 								/*9*/
+								float cosntantNCP) 									/*10*/
 {
 
 	int2 global_id = (int2)(get_global_id(0), get_global_id(1));

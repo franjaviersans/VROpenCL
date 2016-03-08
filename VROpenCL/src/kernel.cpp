@@ -6,7 +6,7 @@ using namespace std;
 
 #define opacityThreshold 0.99
 
-OpenCLClass::OpenCLClass(GLFWwindow* glfwWindow)
+OpenCLClass::OpenCLClass(GLFWwindow* glfwWindow, glm::ivec2 dim)
 {
 
 	cl_uint ret_num_platforms;
@@ -23,14 +23,18 @@ OpenCLClass::OpenCLClass(GLFWwindow* glfwWindow)
 	transferFuncSampler = NULL;
 
 
-	localSize[0] = 16;
-	localSize[1] = 16;
+	localSize[0] = dim.x;
+	localSize[1] = dim.y;
 
 	globalSize[0] = 10;
 	globalSize[1] = 10;
 
 	FILE *fp;
+#ifndef NOT_RAY_BOX
 	char fileName[] = "./shaders/kernel.cl";
+#else
+	char fileName[] = "./shaders/kernelImage.cl";
+#endif
 	char *source_str;
 	size_t source_size;
 
@@ -174,6 +178,12 @@ OpenCLClass::~OpenCLClass()
 	oclCheckError(ciErrNum, CL_SUCCESS);
 	if (d_volumeArray)ciErrNum |= clReleaseMemObject(d_volumeArray);
 	oclCheckError(ciErrNum, CL_SUCCESS);
+#ifdef NOT_RAY_BOX
+	if (d_textureFirst)ciErrNum |= clReleaseMemObject(d_textureFirst);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+	if (d_textureLast)ciErrNum |= clReleaseMemObject(d_textureLast);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+#endif
 	if (d_transferFuncArray)ciErrNum |= clReleaseMemObject(d_transferFuncArray);
 	oclCheckError(ciErrNum, CL_SUCCESS);
 	if (pbo_cl)ciErrNum |= clReleaseMemObject(pbo_cl);
@@ -204,6 +214,10 @@ void OpenCLClass::openCLRC(/*, unsigned int width, unsigned int height, float h,
 	ciErrNum |= clEnqueueAcquireGLObjects(command_queue, 1, &pbo_cl, 0, 0, 0);
 	ciErrNum |= clEnqueueAcquireGLObjects(command_queue, 1, &d_transferFuncArray, 0, 0, 0);
 	ciErrNum |= clEnqueueAcquireGLObjects(command_queue, 1, &d_volumeArray, 0, 0, 0);
+#ifdef NOT_RAY_BOX
+	ciErrNum |= clEnqueueAcquireGLObjects(command_queue, 1, &d_textureFirst, 0, 0, 0);
+	ciErrNum |= clEnqueueAcquireGLObjects(command_queue, 1, &d_textureLast, 0, 0, 0);
+#endif
 	oclCheckError(ciErrNum, CL_SUCCESS);
 
 	/* Execute OpenCL Kernel */
@@ -216,12 +230,15 @@ void OpenCLClass::openCLRC(/*, unsigned int width, unsigned int height, float h,
 	ciErrNum |= clEnqueueReleaseGLObjects(command_queue, 1, &pbo_cl, 0, 0, 0);
 	ciErrNum |= clEnqueueReleaseGLObjects(command_queue, 1, &d_transferFuncArray, 0, 0, 0);
 	ciErrNum |= clEnqueueReleaseGLObjects(command_queue, 1, &d_volumeArray, 0, 0, 0);
-
+#ifdef NOT_RAY_BOX
+	ciErrNum |= clEnqueueReleaseGLObjects(command_queue, 1, &d_textureFirst, 0, 0, 0);
+	ciErrNum |= clEnqueueReleaseGLObjects(command_queue, 1, &d_textureLast, 0, 0, 0);
+#endif
 	oclCheckError(ciErrNum, CL_SUCCESS);
 }
 
 
-void OpenCLClass::openCLSetVolume(cl_char *vol, unsigned int width, unsigned int height, unsigned int depth, float diagonal)
+void OpenCLClass::openCLSetVolume(unsigned int width, unsigned int height, unsigned int depth, float diagonal)
 {
 	if (d_volumeArray != NULL) {
 		// delete old buffer
@@ -236,8 +253,8 @@ void OpenCLClass::openCLSetVolume(cl_char *vol, unsigned int width, unsigned int
 	volumeSamplerLinear = clCreateSampler(context, CL_TRUE, CL_ADDRESS_CLAMP, CL_FILTER_LINEAR, &ciErrNum);
 
 	// set image and sampler args
-	ciErrNum |= clSetKernelArg(kernel, 7, sizeof(cl_mem), (void *)&d_volumeArray);
-	ciErrNum |= clSetKernelArg(kernel, 9, sizeof(cl_sampler), &volumeSamplerLinear);
+	ciErrNum |= clSetKernelArg(kernel, 4, sizeof(cl_mem), (void *)&d_volumeArray);
+	ciErrNum |= clSetKernelArg(kernel, 6, sizeof(cl_sampler), &volumeSamplerLinear);
 
 	//Set the step
 	float step = 1.f / diagonal;
@@ -258,6 +275,10 @@ void OpenCLClass::openCLSetImageSize(unsigned int width, unsigned int height, fl
 	if (pbo_cl != NULL) {
 		// delete old buffer
 		clReleaseMemObject(pbo_cl);
+#ifdef NOT_RAY_BOX
+		clReleaseMemObject(d_textureFirst);
+		clReleaseMemObject(d_textureLast);
+#endif
 	}
 
 
@@ -266,29 +287,41 @@ void OpenCLClass::openCLSetImageSize(unsigned int width, unsigned int height, fl
 	pbo_cl = clCreateFromGLTexture(context, CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, TextureManager::Inst()->GetID(TEXTURE_FINAL_IMAGE), &ciErrNum);
 	oclCheckError(ciErrNum, CL_SUCCESS);
 
+#ifdef NOT_RAY_BOX
+	d_textureFirst = clCreateFromGLTexture(context, CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, TextureManager::Inst()->GetID(TEXTURE_FRONT_HIT), &ciErrNum);
+	d_textureLast = clCreateFromGLTexture(context, CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, TextureManager::Inst()->GetID(TEXTURE_BACK_HIT), &ciErrNum);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+	ciErrNum |= clSetKernelArg(kernel, 8, sizeof(cl_mem), (void *)&d_textureFirst);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+	ciErrNum |= clSetKernelArg(kernel, 9, sizeof(cl_mem), (void *)&d_textureLast);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+#endif
+
 	ciErrNum |= clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&pbo_cl);
 	oclCheckError(ciErrNum, CL_SUCCESS);
-	ciErrNum |= clSetKernelArg(kernel, 2, sizeof(float), &angle);
+	ciErrNum |= clSetKernelArg(kernel, 2, sizeof(unsigned int), &width);
 	oclCheckError(ciErrNum, CL_SUCCESS);
-	ciErrNum |= clSetKernelArg(kernel, 3, sizeof(float), &NCP);
+	ciErrNum |= clSetKernelArg(kernel, 3, sizeof(unsigned int), &height);
 	oclCheckError(ciErrNum, CL_SUCCESS);
-	ciErrNum |= clSetKernelArg(kernel, 4, sizeof(unsigned int), &width);
+#ifndef NOT_RAY_BOX
+	ciErrNum |= clSetKernelArg(kernel, 9, sizeof(float), &angle);
 	oclCheckError(ciErrNum, CL_SUCCESS);
-	ciErrNum |= clSetKernelArg(kernel, 5, sizeof(unsigned int), &height);
+	ciErrNum |= clSetKernelArg(kernel, 10, sizeof(float), &NCP);
 	oclCheckError(ciErrNum, CL_SUCCESS);
-	
+#endif
 }
 
-
+#ifndef NOT_RAY_BOX
 void OpenCLClass::openCLUpdateMatrix(const float * matrix){
 	ciErrNum |= clEnqueueWriteBuffer(command_queue, d_invViewMatrix, CL_FALSE, 0, 16 * sizeof(float), matrix, 0, 0, 0);
-	ciErrNum |= clSetKernelArg(kernel, 6, sizeof(cl_mem), (void *)&d_invViewMatrix);
+	ciErrNum |= clSetKernelArg(kernel, 8, sizeof(cl_mem), (void *)&d_invViewMatrix);
 
 	oclCheckError(ciErrNum, CL_SUCCESS);
 }
+#endif
 
 
-void OpenCLClass::openCLSetTransferFunction(cl_float4 *transferFunction, unsigned int width){
+void OpenCLClass::openCLSetTransferFunction(){
 	
 	if (d_transferFuncArray != NULL) {
 		// delete old buffer
@@ -307,8 +340,8 @@ void OpenCLClass::openCLSetTransferFunction(cl_float4 *transferFunction, unsigne
 
 	
 	// set image and sampler args
-	ciErrNum |= clSetKernelArg(kernel, 8, sizeof(cl_mem), (void *)&d_transferFuncArray);
-	ciErrNum |= clSetKernelArg(kernel, 10, sizeof(cl_sampler), &transferFuncSampler);
+	ciErrNum |= clSetKernelArg(kernel, 5, sizeof(cl_mem), (void *)&d_transferFuncArray);
+	ciErrNum |= clSetKernelArg(kernel, 7, sizeof(cl_sampler), &transferFuncSampler);
 
 	oclCheckError(ciErrNum, CL_SUCCESS);
 }
