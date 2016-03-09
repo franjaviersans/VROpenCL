@@ -180,6 +180,7 @@ private:
 
 #ifdef NOT_RAY_BOX
 	cl_mem d_textureFirst, d_textureLast;
+	cl_sampler hitSampler;
 #endif
 };
 

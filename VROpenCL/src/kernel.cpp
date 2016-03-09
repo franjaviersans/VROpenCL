@@ -183,6 +183,8 @@ OpenCLClass::~OpenCLClass()
 	oclCheckError(ciErrNum, CL_SUCCESS);
 	if (d_textureLast)ciErrNum |= clReleaseMemObject(d_textureLast);
 	oclCheckError(ciErrNum, CL_SUCCESS);
+	if (hitSampler)ciErrNum |= clReleaseSampler(hitSampler);
+	oclCheckError(ciErrNum, CL_SUCCESS);
 #endif
 	if (d_transferFuncArray)ciErrNum |= clReleaseMemObject(d_transferFuncArray);
 	oclCheckError(ciErrNum, CL_SUCCESS);
@@ -295,6 +297,8 @@ void OpenCLClass::openCLSetImageSize(unsigned int width, unsigned int height, fl
 	oclCheckError(ciErrNum, CL_SUCCESS);
 	ciErrNum |= clSetKernelArg(kernel, 9, sizeof(cl_mem), (void *)&d_textureLast);
 	oclCheckError(ciErrNum, CL_SUCCESS);
+	hitSampler = clCreateSampler(context, CL_TRUE, CL_ADDRESS_CLAMP, CL_FILTER_NEAREST, &ciErrNum);
+	ciErrNum |= clSetKernelArg(kernel, 10, sizeof(cl_sampler), &hitSampler);
 #endif
 
 	ciErrNum |= clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&pbo_cl);
@@ -335,7 +339,7 @@ void OpenCLClass::openCLSetTransferFunction(){
 
 
 	// Create samplers for transfer function, linear interpolation and nearest interpolation 
-	transferFuncSampler = clCreateSampler(context, CL_TRUE, CL_ADDRESS_CLAMP_TO_EDGE, CL_FILTER_LINEAR, &ciErrNum);
+	transferFuncSampler = clCreateSampler(context, CL_TRUE, CL_ADDRESS_CLAMP, CL_FILTER_NEAREST, &ciErrNum);
 
 
 	

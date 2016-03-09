@@ -9,7 +9,8 @@ __kernel void volumeRendering(__write_only image2d_t d_output,						/*0*/
 								sampler_t volumeSampler, 							/*6*/
 								sampler_t transferFuncSampler, 						/*7*/
 								__read_only image2d_t firsttexture, 				/*8*/
-								__read_only image2d_t lasttexture) 					/*9*/
+								__read_only image2d_t lasttexture,					/*9*/
+								sampler_t hitSampler) 								/*10*/
 {
 
 	int2 global_id = (int2)(get_global_id(0), get_global_id(1));
@@ -20,9 +21,9 @@ __kernel void volumeRendering(__write_only image2d_t d_output,						/*0*/
 
 		float4 color, bg = (float4)(0.15f); //bg color here
 
-		float4 aux4 = read_imagef(firsttexture, transferFuncSampler, Pos);
+		float4 aux4 = read_imagef(firsttexture, hitSampler, Pos);
 		float3 first = (float3)(aux4.x, aux4.y, aux4.z);
-		aux4 = read_imagef(lasttexture, transferFuncSampler, Pos);
+		aux4 = read_imagef(lasttexture, hitSampler, Pos);
 		float3 last = (float3)(aux4.x, aux4.y, aux4.z);
 
 		//Get direction of the ray
@@ -38,8 +39,10 @@ __kernel void volumeRendering(__write_only image2d_t d_output,						/*0*/
 
 		for (float t = 0; t <= D; t += constantH){
 
+			float3 transClamp = clamp(trans, 0.01f, 0.99f);
+
 			//Sample in the scalar field and the transfer function
-			float4 scalar = read_imagef(volume, volumeSampler, (float4)(trans.x, trans.y, trans.z, 0.0f)); //convert to texture space
+			float4 scalar = read_imagef(volume, volumeSampler, (float4)(transClamp.x, transClamp.y, transClamp.z, 0.0f)); //convert to texture space
 			//float scalar = tex3D(volume, trans.x, trans.y, trans.z);
 			float4 samp = read_imagef(transferFunc, transferFuncSampler, (float2)(scalar.x, 0.5f));
 			//float scalar = 0.1;
