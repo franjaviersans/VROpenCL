@@ -39,8 +39,7 @@ __kernel void volumeRendering(__write_only image2d_t d_output,						/*0*/
 		for (float t = 0; t <= D; t += constantH){
 
 			//Sample in the scalar field and the transfer function
-			float4 scalar = read_imagef(volume, volumeSampler,
-				(float4)(trans.x, trans.y, trans.z, 0.0f)); //convert to texture space
+			float4 scalar = read_imagef(volume, volumeSampler, (float4)(trans.x, trans.y, trans.z, 0.0f)); //convert to texture space
 			//float scalar = tex3D(volume, trans.x, trans.y, trans.z);
 			float4 samp = read_imagef(transferFunc, transferFuncSampler, (float2)(scalar.x, 0.5f));
 			//float scalar = 0.1;
