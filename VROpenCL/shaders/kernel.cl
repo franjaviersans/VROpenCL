@@ -122,9 +122,9 @@ __kernel void volumeRendering(__write_only image2d_t d_output,						/*0*/
 			//float3 last = firsHit[tpos];
 			//float3 first = lastHit[tpos];
 			float4 f4 = eyeRay.o + eyeRay.d*tnear;
-			float3 first = (float3)(f4.x, f4.y, f4.z);
+			float3 first = (float3)(f4.x + 0.5f, f4.y + 0.5f, 1.0f - (f4.z + 0.5f));
 			float4 l4 = eyeRay.o + eyeRay.d*tfar;
-			float3 last = (float3)(l4.x, l4.y, l4.z);
+			float3 last = (float3)(l4.x + 0.5f, l4.y + 0.5f, 1.0f - (l4.z + 0.5f));
 
 			//Get direction of the ray
 			float3 direction = last - first;
@@ -141,7 +141,7 @@ __kernel void volumeRendering(__write_only image2d_t d_output,						/*0*/
 
 				//Sample in the scalar field and the transfer function
 				float4 scalar = read_imagef(volume, volumeSampler, 
-					(float4)(trans.x + 0.5f, trans.y + 0.5f, 1.0f - (trans.z + 0.5f), 0.0f)); //convert to texture space
+					(float4)(trans.x, trans.y, trans.z, 0.0f)); //convert to texture space
 				//float scalar = tex3D(volume, trans.x, trans.y, trans.z);
 				float4 samp = read_imagef(transferFunc, transferFuncSampler, (float2)(scalar.x, 0.5f));
 				//float scalar = 0.1;
