@@ -8,6 +8,12 @@
 //#define NOT_DISPLAY
 
 
+//devide if the performance time is going to be used
+#define MEASURE_TIME
+
+#define NUM_CYCLES 300
+
+
 #define BUFFER_OFFSET(i) (reinterpret_cast<void*>(i))
 #define WORLD_COORD_LOCATION	0
 #define COLOR_COORD_LOCATION	1
