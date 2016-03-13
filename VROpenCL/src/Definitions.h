@@ -2,7 +2,7 @@
 #define Definitions_H
 
 // decide if is ray/box intersection or by OpenGL images
-#define NOT_RAY_BOX
+//#define NOT_RAY_BOX
 
 // decide to display the results or not
 //#define NOT_DISPLAY
