@@ -12,10 +12,10 @@ Volume Rendering application using OpenCL with OpenGL
 The program can run without any parameters and will load a volume of size 256x256x256 localted in "./RAW/volume.raw". Some parameters can be passed to the program in the following way: 
 
 ```sh
-$ program <volume_path> <width> <height> <depth> <work_group_x> <work_group_Y> [<transfer_func_path>]
+$ program <volume_path> <width> <height> <depth> <bits> <scalex> <scaley> <scalez> <work_group_x> <work_group_Y> [<transfer_func_path>]
 ```
 
-where **<volume_path>** is the path of the file containing the volume; **<width>, <height>,** and **<depth>** the dimensions of the volume; **<work_group_x>** and **<work_group_Y>** the dimensions of the workgroup, and **<transfer_function_path>** is the path of the file containing the initial set up of the transfer function. The last parameter is optional, in which case, the identity function is loaded.
+where **<volume_path>** is the path of the file containing the volume; **<width>, <height>,** and **<depth>** the dimensions of the volume; **<bits>** the number of bits per scalar (only 8 and 16 bits supported); **<scalex>**, **<scaley>**, and **<scalez>** the scale of the volume in every direction; **<work_group_x>** and **<work_group_Y>** the dimensions of the workgroup, and **<transfer_function_path>** is the path of the file containing the initial set up of the transfer function. The last parameter is optional, in which case, the identity function is loaded.
 
 ## Set up of the Transfer Function File#
 
