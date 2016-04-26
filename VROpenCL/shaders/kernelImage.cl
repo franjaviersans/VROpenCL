@@ -16,7 +16,7 @@ __kernel void volumeRendering(__write_only image2d_t d_output,						/*0*/
 	int2 global_id = (int2)(get_global_id(0), get_global_id(1));
 
 	if (global_id.x < constantWidth && global_id.y < constantHeight){
-		float2 Pos = (float2)(global_id.x / (float)constantWidth, global_id.y / (float)constantHeight);
+		float2 Pos = (float2)((global_id.x + 0.5f) / (float)1024, (global_id.y + 0.5f) / (float)768);
 
 
 		float4 color; //bg color here
@@ -37,7 +37,7 @@ __kernel void volumeRendering(__write_only image2d_t d_output,						/*0*/
 		float3 trans = first;
 		float3 rayStep = direction * constantH;
 
-		for (float t = 0; t <= D; t += constantH){
+		for (float t = 0.0000001f; t <= D; t += constantH){
 
 			//Sample in the scalar field and the transfer function
 			float4 scalar = read_imagef(volume, volumeSampler, (float4)(trans.x, trans.y, trans.z, 0.0f)); //convert to texture space
