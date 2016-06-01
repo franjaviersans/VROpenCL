@@ -9,7 +9,7 @@
 
 
 //decide if the performance time is going to be used
-#define MEASURE_TIME
+//#define MEASURE_TIME
 
 #define NUM_CYCLES 300
 

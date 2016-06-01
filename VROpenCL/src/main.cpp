@@ -242,23 +242,7 @@ namespace glfwFunc
 	///< Function to warup opencl
 	void WarmUP(unsigned int cycles, bool measure = false){
 
-		RotationMat = glm::mat4_cast(glm::normalize(quater));
-
-		mModelViewMatrix = glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -2.0f)) *
-			RotationMat * scale;
-
-		mMVP = mProjMatrix * mModelViewMatrix;
-
-#ifndef NOT_RAY_BOX
-		opencl->openCLUpdateMatrix(glm::value_ptr(glm::transpose(glm::inverse(mModelViewMatrix))));
-#else
-		//Obtain Back hits
-		m_BackInter->Draw(mMVP);
-		//Obtain the front hits
-		m_FrontInter->Draw(mMVP);
-#endif
-
-
+		
 #ifdef MEASURE_TIME
 		if (measure){
 			timer.Start();
@@ -266,6 +250,22 @@ namespace glfwFunc
 #endif
 
 		for (int i = 0; i < cycles; ++i) {
+			RotationMat = glm::mat4_cast(glm::normalize(quater));
+
+			mModelViewMatrix = glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -2.0f)) *
+				RotationMat * scale;
+
+			mMVP = mProjMatrix * mModelViewMatrix;
+
+#ifndef NOT_RAY_BOX
+			opencl->openCLUpdateMatrix(glm::value_ptr(glm::transpose(glm::inverse(mModelViewMatrix))));
+#else
+			//Obtain Back hits
+			m_BackInter->Draw(mMVP);
+			//Obtain the front hits
+			m_FrontInter->Draw(mMVP);
+#endif
+
 			//Opencl volume ray casting
 			opencl->openCLRC();
 		}
