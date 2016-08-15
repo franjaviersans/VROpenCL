@@ -23,7 +23,7 @@
 #ifndef HELPER_MATH_H
 #define HELPER_MATH_H
 
-#include <cuda_runtime.h>
+/*#include <cuda_runtime.h>
 
 typedef unsigned int uint;
 typedef unsigned short ushort;
@@ -1476,6 +1476,6 @@ inline __host__ __device__  float4 multiplication(const float4x4 &M, const float
 	r.z = dot(v, M.m[2]);
 	r.w = dot(v, M.m[3]);
 	return r;
-}
+}*/
 
 #endif

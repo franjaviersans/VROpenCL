@@ -59,7 +59,7 @@ void CFinalImage::SetResolution(GLuint ResW, GLuint ResH)
 	glActiveTexture(GL_TEXTURE0);
 
 	//Create new empty textures
-	TextureManager::Inst()->CreateTexture2D(TEXTURE_FINAL_IMAGE, m_uiWidth, m_uiHeight, GL_RGBA8, GL_RGBA, GL_FLOAT, GL_LINEAR, GL_LINEAR);
+	TextureManager::Inst()->CreateTexture2D(TEXTURE_FINAL_IMAGE, m_uiWidth, m_uiHeight, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR);
 
 	m_program.use();
 	{
