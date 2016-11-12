@@ -248,7 +248,7 @@ void OpenCLClass::openCLSetVolume(unsigned int width, unsigned int height, unsig
 	}
 
 
-	d_volumeArray = clCreateFromGLTexture(context, CL_MEM_READ_ONLY, GL_TEXTURE_3D, 0, TextureManager::Inst()->GetID(TEXTURE_VOLUME), &ciErrNum);
+	d_volumeArray = clCreateFromGLTexture(context, CL_MEM_READ_ONLY, GL_TEXTURE_3D, 0, TextureManager::Inst().GetID(TEXTURE_VOLUME), &ciErrNum);
 	oclCheckError(ciErrNum, CL_SUCCESS);
 
 
@@ -286,7 +286,7 @@ void OpenCLClass::openCLSetImageSize(unsigned int width, unsigned int height, fl
 
 	oclCheckError(ciErrNum, CL_SUCCESS);
 	// create OpenCL buffer from GL PBO
-	pbo_cl = clCreateFromGLTexture(context, CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, TextureManager::Inst()->GetID(TEXTURE_FINAL_IMAGE), &ciErrNum);
+	pbo_cl = clCreateFromGLTexture(context, CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, TextureManager::Inst().GetID(TEXTURE_FINAL_IMAGE), &ciErrNum);
 	oclCheckError(ciErrNum, CL_SUCCESS);
 
 #ifdef NOT_RAY_BOX
@@ -334,7 +334,7 @@ void OpenCLClass::openCLSetTransferFunction(){
 	
 	
 	//Pass texture to Opencl
-	d_transferFuncArray = clCreateFromGLTexture(context, CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, TextureManager::Inst()->GetID(TEXTURE_TRANSFER_FUNC), &ciErrNum);
+	d_transferFuncArray = clCreateFromGLTexture(context, CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, TextureManager::Inst().GetID(TEXTURE_TRANSFER_FUNC), &ciErrNum);
 	oclCheckError(ciErrNum, CL_SUCCESS);
 
 
@@ -355,5 +355,5 @@ void OpenCLClass::openCLSetTransferFunction(){
 void OpenCLClass::Use(GLenum activeTexture){
 	// copy from pbo to texture
 	glActiveTexture(activeTexture);
-	TextureManager::Inst()->BindTexture(TEXTURE_FINAL_IMAGE);
+	TextureManager::Inst().BindTexture(TEXTURE_FINAL_IMAGE);
 }
