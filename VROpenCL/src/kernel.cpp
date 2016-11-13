@@ -31,9 +31,17 @@ OpenCLClass::OpenCLClass(GLFWwindow* glfwWindow, glm::ivec2 dim)
 
 	FILE *fp;
 #ifndef NOT_RAY_BOX
-	char fileName[] = "./shaders/kernel.cl";
+	#ifdef LIGHTING
+		char fileName[] = "./shaders/kernelLight.cl";
+	#else
+		char fileName[] = "./shaders/kernel.cl";
+	#endif
 #else
-	char fileName[] = "./shaders/kernelImage.cl";
+	#ifdef LIGHTING
+		char fileName[] = "./shaders/kernelImageLight.cl";
+	#else
+		char fileName[] = "./shaders/kernelImage.cl";
+	#endif
 #endif
 	char *source_str;
 	size_t source_size;
@@ -167,6 +175,19 @@ OpenCLClass::OpenCLClass(GLFWwindow* glfwWindow, glm::ivec2 dim)
 
 	d_invViewMatrix = clCreateBuffer(context, CL_MEM_READ_ONLY, 16 * sizeof(float), 0, &ciErrNum);
 	oclCheckError(ciErrNum, CL_SUCCESS);
+
+#ifdef LIGHTING
+	d_diffColor = clCreateBuffer(context, CL_MEM_READ_ONLY, 3 * sizeof(float), 0, &ciErrNum);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+
+	d_lightDir = clCreateBuffer(context, CL_MEM_READ_ONLY, 3 * sizeof(float), 0, &ciErrNum);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+
+	d_voxelJump = clCreateBuffer(context, CL_MEM_READ_ONLY, 3 * sizeof(float), 0, &ciErrNum);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+#endif
+
+
 }
 
 OpenCLClass::~OpenCLClass()
@@ -192,6 +213,16 @@ OpenCLClass::~OpenCLClass()
 	oclCheckError(ciErrNum, CL_SUCCESS);
 	if (d_invViewMatrix)ciErrNum |= clReleaseMemObject(d_invViewMatrix);
 	oclCheckError(ciErrNum, CL_SUCCESS);
+
+#ifdef LIGHTING
+	if (d_diffColor)ciErrNum |= clReleaseMemObject(d_diffColor);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+	if (d_voxelJump)ciErrNum |= clReleaseMemObject(d_voxelJump);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+	if (d_lightDir)ciErrNum |= clReleaseMemObject(d_lightDir);
+	oclCheckError(ciErrNum, CL_SUCCESS);
+#endif
+
 	ciErrNum |= clFlush(command_queue);
 	oclCheckError(ciErrNum, CL_SUCCESS);
 	ciErrNum |= clFinish(command_queue);
@@ -290,8 +321,8 @@ void OpenCLClass::openCLSetImageSize(unsigned int width, unsigned int height, fl
 	oclCheckError(ciErrNum, CL_SUCCESS);
 
 #ifdef NOT_RAY_BOX
-	d_textureFirst = clCreateFromGLTexture(context, CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, TextureManager::Inst()->GetID(TEXTURE_FRONT_HIT), &ciErrNum);
-	d_textureLast = clCreateFromGLTexture(context, CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, TextureManager::Inst()->GetID(TEXTURE_BACK_HIT), &ciErrNum);
+	d_textureFirst = clCreateFromGLTexture(context, CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, TextureManager::Inst().GetID(TEXTURE_FRONT_HIT), &ciErrNum);
+	d_textureLast = clCreateFromGLTexture(context, CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, TextureManager::Inst().GetID(TEXTURE_BACK_HIT), &ciErrNum);
 	oclCheckError(ciErrNum, CL_SUCCESS);
 	ciErrNum |= clSetKernelArg(kernel, 8, sizeof(cl_mem), (void *)&d_textureFirst);
 	oclCheckError(ciErrNum, CL_SUCCESS);
@@ -319,6 +350,28 @@ void OpenCLClass::openCLSetImageSize(unsigned int width, unsigned int height, fl
 void OpenCLClass::openCLUpdateMatrix(const float * matrix){
 	ciErrNum |= clEnqueueWriteBuffer(command_queue, d_invViewMatrix, CL_FALSE, 0, 16 * sizeof(float), matrix, 0, 0, 0);
 	ciErrNum |= clSetKernelArg(kernel, 8, sizeof(cl_mem), (void *)&d_invViewMatrix);
+
+	oclCheckError(ciErrNum, CL_SUCCESS);
+}
+#endif
+
+#ifdef LIGHTING
+void OpenCLClass::openCLUpdateLight(const float * lightDir){
+	ciErrNum |= clEnqueueWriteBuffer(command_queue, d_lightDir, CL_FALSE, 0, 3 * sizeof(float), lightDir, 0, 0, 0);
+	ciErrNum |= clSetKernelArg(kernel, 12, sizeof(cl_mem), (void *)&d_lightDir);
+
+	oclCheckError(ciErrNum, CL_SUCCESS);
+}
+
+void OpenCLClass::openCLUpdateVoxelSize(const float * voxelJump){
+	ciErrNum |= clEnqueueWriteBuffer(command_queue, d_voxelJump, CL_FALSE, 0, 3 * sizeof(float), voxelJump, 0, 0, 0);
+	ciErrNum |= clSetKernelArg(kernel, 13, sizeof(cl_mem), (void *)&d_voxelJump);
+
+	oclCheckError(ciErrNum, CL_SUCCESS);
+
+	glm::vec3 diffColor = glm::vec3(1.0, 0.0, 1.0f);
+	ciErrNum |= clEnqueueWriteBuffer(command_queue, d_diffColor, CL_FALSE, 0, 3 * sizeof(float), glm::value_ptr(diffColor), 0, 0, 0);
+	ciErrNum |= clSetKernelArg(kernel, 11, sizeof(cl_mem), (void *)&d_diffColor);
 
 	oclCheckError(ciErrNum, CL_SUCCESS);
 }

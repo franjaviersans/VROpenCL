@@ -158,6 +158,10 @@ public:
 #ifndef NOT_RAY_BOX
 	void openCLUpdateMatrix(const float * matrix);
 #endif
+#ifdef LIGHTING
+	void openCLUpdateLight(const float * lightDir);
+	void openCLUpdateVoxelSize(const float * voxelJump);
+#endif
 	void openCLRC(/*, unsigned int, unsigned int, float, float4 *, float4 **/);
 	void openCLSetVolume(unsigned int width, unsigned int height, unsigned int depth, float diagonal);
 	void openCLSetImageSize(unsigned int width, unsigned int height, float NCP, float angle);
@@ -174,6 +178,11 @@ private:
 	size_t globalSize[2];
 	size_t localSize[2];
 	cl_mem d_invViewMatrix;
+#ifdef LIGHTING
+	cl_mem d_diffColor;
+	cl_mem d_lightDir;
+	cl_mem d_voxelJump;
+#endif
 	cl_int ciErrNum;
 	cl_mem pbo_cl, d_volumeArray, d_transferFuncArray;
 	cl_sampler volumeSamplerLinear, transferFuncSampler;

@@ -118,5 +118,11 @@
     <None Include="shaders\kernelImage.cl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="shaders\kernelLight.cl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\kernelImageLight.cl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -183,6 +183,8 @@
     <None Include="shaders\hit.vert" />
     <None Include="shaders\kernel.cl" />
     <None Include="shaders\kernelImage.cl" />
+    <None Include="shaders\kernelImageLight.cl" />
+    <None Include="shaders\kernelLight.cl" />
     <None Include="shaders\textureQuad.frag" />
     <None Include="shaders\textureQuad.vert" />
     <None Include="shaders\TransferFunction.frag" />

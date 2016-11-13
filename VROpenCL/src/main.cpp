@@ -31,9 +31,12 @@ namespace glfwFunc
 	//Declare the transfer function
 	TransferFunction *g_pTransferFunc;
 
-	char * volume_filepath = "./Raw/volume.raw";
+	char * volume_filepath = "../.././Raw/nucleon_8_41_41_41.raw";
 	char * transfer_func_filepath = NULL;
-	glm::ivec3 vol_size = glm::ivec3(256, 256, 256);
+	glm::ivec3 vol_size = glm::ivec3(41, 41, 41);
+	/*char * volume_filepath = "./Raw/volume.raw";
+	char * transfer_func_filepath = NULL;
+	glm::ivec3 vol_size = glm::ivec3(256, 256, 256);*/
 	glm::ivec2 block_dimension = glm::ivec2(16, 16);
 	glm::mat4 scale = glm::mat4();
 	bool bits8 = true;
@@ -211,6 +214,12 @@ namespace glfwFunc
 		m_FrontInter->Draw(mMVP);
 #endif
 
+#ifdef LIGHTING
+		vec3 lightDir = vec3(inverse(mModelViewMatrix) * vec4(0.0, 0.0, -1.0f, 0.0f));
+		lightDir = normalize(lightDir);
+		opencl->openCLUpdateLight(glm::value_ptr(lightDir));
+#endif
+
 
 
 		//Opencl volume ray casting
@@ -269,6 +278,15 @@ namespace glfwFunc
 			//Obtain the front hits
 			m_FrontInter->Draw(mMVP);
 #endif
+
+#ifdef LIGHTING
+			vec3 lightDir = vec3(inverse(mModelViewMatrix) * vec4(0.0, 0.0, -1.0f, 0.0f));
+			lightDir = normalize(lightDir);
+			opencl->openCLUpdateLight(glm::value_ptr(lightDir));
+#endif
+
+
+
 
 			//Opencl volume ray casting
 			opencl->openCLRC();
@@ -334,7 +352,9 @@ namespace glfwFunc
 
 		opencl->openCLSetVolume(vol_size.x, vol_size.y, vol_size.z, volume->m_fDiagonal);
 
-		
+#ifdef LIGHTING
+		opencl->openCLUpdateVoxelSize(glm::value_ptr(volume->getVoxelSize()));
+#endif	
 
 #ifdef NOT_RAY_BOX
 		m_BackInter = new CCubeIntersection(false, WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -374,6 +394,12 @@ int main(int argc, char** argv)
 	cout << "Using image intersection" << endl;
 #else
 	cout << "Using ray box intersection" << endl;
+#endif
+
+#ifdef LIGHTING
+	cout << "Using lighting" << endl;
+#else
+	cout << "Without lighting" << endl;
 #endif
 
 #ifdef NOT_DISPLAY
