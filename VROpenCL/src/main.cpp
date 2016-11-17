@@ -267,6 +267,14 @@ namespace glfwFunc
 
 			mMVP = mProjMatrix * mModelViewMatrix;
 
+			
+#ifdef LIGHTING
+			vec3 lightDir = vec3(inverse(mModelViewMatrix) * vec4(0.0, 0.0, -1.0f, 0.0f));
+			lightDir = normalize(lightDir);
+			opencl->openCLUpdateLight(glm::value_ptr(lightDir));
+#endif
+
+
 #ifndef NOT_RAY_BOX
 			opencl->openCLUpdateMatrix(glm::value_ptr(glm::transpose(glm::inverse(mModelViewMatrix))));
 #else
@@ -276,11 +284,7 @@ namespace glfwFunc
 			m_FrontInter->Draw(mMVP);
 #endif
 
-#ifdef LIGHTING
-			vec3 lightDir = vec3(inverse(mModelViewMatrix) * vec4(0.0, 0.0, -1.0f, 0.0f));
-			lightDir = normalize(lightDir);
-			opencl->openCLUpdateLight(glm::value_ptr(lightDir));
-#endif
+
 
 
 
