@@ -51,10 +51,11 @@ To compile in Visual Studio, the header files must be put in a "include" folder 
 	- VRGLSL/include/ (stb_image file)
 
 The GLFW libs libraries must be set on a folder "lib" that must be organized as follows:
+
     - lib/x86/ (x86 libs)
 	- lib/x64/ (x64 libs)
 	
-The project also uses a transfer function class that be obtained [here](https://github.com/franjaviersans/transfer-function-glfw3)
+The project also uses a transfer function class that be obtained [here](https://github.com/franjaviersans/transfer-function-glfw3).
 
 ## Screenshots
 
@@ -62,4 +63,4 @@ The following is a screenshot of the program running:
 
 <p align="center">
   <img src ="./screenshot/render.png" />
-</p>1111
+</p>
