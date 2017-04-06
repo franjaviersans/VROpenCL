@@ -44,16 +44,16 @@ The following externa libraries/ projects were used in the develop of this progr
 
 To compile in Visual Studio, the header files must be put in a "include" folder as follows:
 
-    - VRGLSL/include/glad/ (glad files)
-    - VRGLSL/include/GLFW/ (GLFW files)
-    - VRGLSL/include/glm/ (GLM files)
-	- VRGLSL/include/KHR/ (file included with glad)
-	- VRGLSL/include/ (stb_image file)
+    - VROpenCL/include/glad/ (glad files)
+    - VROpenCL/include/GLFW/ (GLFW files)
+    - VROpenCL/include/glm/ (GLM files)
+	- VROpenCL/include/KHR/ (file included with glad)
+	- VROpenCL/include/ (stb_image file)
 
 The GLFW libs libraries must be set on a folder "lib" that must be organized as follows:
 
-    - lib/x86/ (x86 libs)
-	- lib/x64/ (x64 libs)
+    - VROpenCL/lib/x86/ (x86 libs)
+	- VROpenCL/lib/x64/ (x64 libs)
 	
 The project also uses a transfer function class that be obtained [here](https://github.com/franjaviersans/transfer-function-glfw3).
 
